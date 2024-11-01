@@ -1,0 +1,22 @@
+[project]
+name = "openlimit"
+version = "0.3.0"
+requires-python = ">=3.9"
+dependencies = [
+    "redis>=5",
+    "tiktoken>=0.5"
+]
+
+[tool.pyright]
+reportUnusedImport = false
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.387",
+    "pytest>=8.3.3",
+    "ruff>=0.7.2",
+]
