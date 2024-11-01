@@ -1,4 +1,5 @@
-# Third party
+from typing import Any, Union
+
 import tiktoken
 
 # Tokenizer
@@ -6,12 +7,9 @@ CL100K_ENCODER = tiktoken.get_encoding("cl100k_base")
 P50K_ENCODER = tiktoken.get_encoding("p50k_base")
 
 
-######
-# MAIN
-######
-
-
-def num_tokens_consumed_by_chat_request(messages, max_tokens=15, n=1, **kwargs):
+def num_tokens_consumed_by_chat_request(
+    messages: list[dict[str, str]], max_tokens: int = 15, n: int = 1, **kwargs: Any
+) -> int:
     num_tokens = n * max_tokens
     for message in messages:
         num_tokens += (
@@ -28,27 +26,23 @@ def num_tokens_consumed_by_chat_request(messages, max_tokens=15, n=1, **kwargs):
     return num_tokens
 
 
-def num_tokens_consumed_by_completion_request(prompt, max_tokens=15, n=1, **kwargs):
+def num_tokens_consumed_by_completion_request(
+    prompt: Union[str, list[str]], max_tokens: int = 15, n: int = 1, **kwargs: Any
+) -> int:
     num_tokens = n * max_tokens
     if isinstance(prompt, str):  # Single prompt
         num_tokens += len(P50K_ENCODER.encode(prompt))
-    elif isinstance(prompt, list):  # Multiple prompts
+    else:  # Multiple prompts
         num_tokens *= len(prompt)
-        num_tokens += sum([len(P50K_ENCODER.encode(p)) for p in prompt])
-    else:
-        raise TypeError(
-            "Either a string or list of strings expected for 'prompt' field in completion request."
-        )
+        num_tokens += sum(len(P50K_ENCODER.encode(p)) for p in prompt)
 
     return num_tokens
 
 
-def num_tokens_consumed_by_embedding_request(input, **kwargs):
+def num_tokens_consumed_by_embedding_request(
+    input: Union[str, list[str]], **kwargs: Any
+) -> int:
     if isinstance(input, str):  # Single input
         return len(P50K_ENCODER.encode(input))
-    elif isinstance(input, list):  # Multiple inputs
-        return sum([len(P50K_ENCODER.encode(i)) for i in input])
-
-    raise TypeError(
-        "Either a string or list of strings expected for 'input' field in embedding request."
-    )
+    else:  # Multiple inputs
+        return sum(len(P50K_ENCODER.encode(i)) for i in input)

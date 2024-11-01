@@ -1,28 +1,21 @@
-# Standard library
-import asyncio
+from collections.abc import Callable
+from typing import Any
+import redis.asyncio
 
-# Third party
-import redis
-
-# Local
 import openlimit.utilities as utils
 from openlimit.buckets import RedisBucket, RedisBuckets
 
-############
-# BASE CLASS
-############
 
-
-class RateLimiterWithRedis(object):
+class RateLimiterWithRedis:
     def __init__(
         self,
-        request_limit,
-        token_limit,
-        token_counter,
-        bucket_key,
-        redis_url="redis://localhost:5050",
+        request_limit: int,
+        token_limit: int,
+        token_counter: Callable[..., int],
+        bucket_key: str,
+        redis_url: str = "redis://localhost:5050",
         bucket_size_in_seconds: float = 1,
-    ):
+    ) -> None:
         # Rate limits
         self.request_limit = request_limit
         self.token_limit = token_limit
@@ -43,11 +36,11 @@ class RateLimiterWithRedis(object):
         # Bucket prefix (for Redis)
         self._bucket_key = bucket_key
 
-    async def _init_buckets(self):
+    async def _init_buckets(self) -> None:
         if self._buckets:
             return
 
-        db = await redis.asyncio.from_url(
+        db = await redis.asyncio.from_url(  # type: ignore
             self._redis_url, encoding="utf-8", decode_responses=True
         )
 
@@ -69,41 +62,40 @@ class RateLimiterWithRedis(object):
             ],
         )
 
-    async def wait_for_capacity(self, num_tokens):
+    async def wait_for_capacity(self, num_tokens: int) -> None:
         await self._init_buckets()
-        await self._buckets.wait_for_capacity(
-            amounts=[1, num_tokens], sleep_interval=self.sleep_interval
-        )
+        if self._buckets:
+            await self._buckets.wait_for_capacity(
+                amounts=[1, num_tokens], sleep_interval=self.sleep_interval
+            )
 
-    def wait_for_capacity_sync(self, num_tokens):
+    def wait_for_capacity_sync(self, num_tokens: int) -> None:
         loop = utils.ensure_event_loop()
         loop.run_until_complete(self._init_buckets())
-        loop.run_until_complete(self._buckets.wait_for_capacity(
-            amounts=[1, num_tokens], sleep_interval=self.sleep_interval
-        ))
+        if self._buckets:
+            loop.run_until_complete(
+                self._buckets.wait_for_capacity(
+                    amounts=[1, num_tokens], sleep_interval=self.sleep_interval
+                )
+            )
 
-    def limit(self, **kwargs):
+    def limit(self, **kwargs: Any) -> utils.ContextManager:
         num_tokens = self.token_counter(**kwargs)
         return utils.ContextManager(num_tokens, self)
 
-    def is_limited(self):
+    def is_limited(self) -> utils.FunctionDecorator:
         return utils.FunctionDecorator(self)
-
-
-######
-# MAIN
-######
 
 
 class ChatRateLimiterWithRedis(RateLimiterWithRedis):
     def __init__(
         self,
-        request_limit=3500,
-        token_limit=90000,
-        redis_url="redis://localhost:5050",
+        request_limit: int = 3500,
+        token_limit: int = 90000,
+        redis_url: str = "redis://localhost:5050",
         bucket_size_in_seconds: float = 1,
-        bucket_key="chat",
-    ):
+        bucket_key: str = "chat",
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,
@@ -117,12 +109,12 @@ class ChatRateLimiterWithRedis(RateLimiterWithRedis):
 class CompletionRateLimiterWithRedis(RateLimiterWithRedis):
     def __init__(
         self,
-        request_limit=3500,
-        token_limit=350000,
-        redis_url="redis://localhost:5050",
+        request_limit: int = 3500,
+        token_limit: int = 350000,
+        redis_url: str = "redis://localhost:5050",
         bucket_size_in_seconds: float = 1,
-        bucket_key="completion",
-    ):
+        bucket_key: str = "completion",
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,
@@ -136,12 +128,12 @@ class CompletionRateLimiterWithRedis(RateLimiterWithRedis):
 class EmbeddingRateLimiterWithRedis(RateLimiterWithRedis):
     def __init__(
         self,
-        request_limit=3500,
-        token_limit=70000000,
-        redis_url="redis://localhost:5050",
+        request_limit: int = 3500,
+        token_limit: int = 70000000,
+        redis_url: str = "redis://localhost:5050",
         bucket_size_in_seconds: float = 1,
-        bucket_key="embedding",
-    ):
+        bucket_key: str = "embedding",
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,

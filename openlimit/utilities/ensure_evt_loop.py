@@ -1,6 +1,7 @@
 import asyncio
 
-def ensure_event_loop():
+
+def ensure_event_loop() -> asyncio.AbstractEventLoop:
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError as e:

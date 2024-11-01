@@ -1,22 +1,25 @@
-import time
-from contextlib import AsyncExitStack, ExitStack
-from typing import Optional
 import asyncio
-import redis
-from openlimit.buckets.redis_bucket import RedisBucket
-import openlimit.utilities as utils
+import time
+from contextlib import AsyncExitStack
+from typing import Any, Optional
 
-class RedisBuckets(object):
+import redis.asyncio
+import redis.asyncio.client
+
+import openlimit.utilities as utils
+from openlimit.buckets.redis_bucket import RedisBucket
+
+
+class RedisBuckets:
     def __init__(self, buckets: list[RedisBucket], redis: redis.asyncio.Redis) -> None:
         self.buckets = buckets
         self._redis = redis
 
-    async def _lock(self, **kwargs):
-
+    async def _lock(self, **kwargs: Any) -> AsyncExitStack:
         stack = AsyncExitStack()
 
         for bucket in self.buckets:
-            await stack.enter_async_context(bucket._lock(**kwargs))
+            await stack.enter_async_context(bucket.lock(**kwargs))
 
         return stack
 
@@ -24,8 +27,7 @@ class RedisBuckets(object):
         self,
         pipeline: Optional[redis.asyncio.client.Pipeline] = None,
         current_time: Optional[float] = None,
-    ):
-
+    ) -> list[float]:
         if pipeline is None:
             pipeline = self._redis.pipeline()
 
@@ -33,7 +35,7 @@ class RedisBuckets(object):
             current_time = time.time()
 
         new_capacities = [
-            await bucket._get_capacity(pipeline=pipeline, current_time=current_time)
+            await bucket.get_capacity(pipeline=pipeline, current_time=current_time)
             for bucket in self.buckets
         ]
 
@@ -44,8 +46,7 @@ class RedisBuckets(object):
         new_capacities: list[float],
         pipeline: Optional[redis.asyncio.client.Pipeline] = None,
         current_time: Optional[float] = None,
-    ):
-
+    ) -> None:
         if pipeline is None:
             pipeline = self._redis.pipeline()
 
@@ -53,8 +54,7 @@ class RedisBuckets(object):
             current_time = time.time()
 
         for new_capacity, bucket in zip(new_capacities, self.buckets):
-
-            await bucket._set_capacity(
+            await bucket.set_capacity(
                 new_capacity,
                 pipeline=pipeline,
                 current_time=current_time,
@@ -63,11 +63,10 @@ class RedisBuckets(object):
 
         await pipeline.execute()
 
-    async def _has_capacity_async(self, amounts: list[float]):
-
+    async def _has_capacity_async(self, amounts: list[float]) -> bool:
+        has_capacity = False
         # Lock all the buckets
         async with await self._lock(timeout=2):
-
             # Create the pipeline and current time
             pipeline = self._redis.pipeline()
             current_time = time.time()
@@ -101,13 +100,14 @@ class RedisBuckets(object):
 
     async def wait_for_capacity(
         self, amounts: list[float], sleep_interval: float = 1e-1
-    ):
-
+    ) -> None:
         while not await self._has_capacity_async(amounts):
             await asyncio.sleep(sleep_interval)
 
     def wait_for_capacity_sync(
         self, amounts: list[float], sleep_interval: float = 1e-1
-    ):
+    ) -> None:
         loop = utils.ensure_event_loop()
-        loop.run_until_complete(self.wait_for_capacity(amounts, sleep_interval=sleep_interval))
+        loop.run_until_complete(
+            self.wait_for_capacity(amounts, sleep_interval=sleep_interval)
+        )
