@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast, overload
 
 from typing_extensions import ParamSpec
 
-
 if TYPE_CHECKING:
     from openlimit.rate_limiters import RateLimiter
     from openlimit.redis_rate_limiters import RateLimiterWithRedis

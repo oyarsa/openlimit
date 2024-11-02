@@ -1,4 +1,4 @@
-from openlimit.utilities.context_decorators import FunctionDecorator, ContextManager
+from openlimit.utilities.context_decorators import ContextManager, FunctionDecorator
 from openlimit.utilities.ensure_evt_loop import ensure_event_loop
 from openlimit.utilities.token_counters import (
     num_tokens_consumed_by_chat_request,

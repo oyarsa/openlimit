@@ -47,10 +47,11 @@ async def test_rate_limiter_within_limits_async(chat_params: dict[str, Any]):
     async def run_rate_limited_function():
         try:
             await rate_limited_function_async(chat_params)
-            return 1
         except Exception as e:
             print(e)
             return 0
+        else:
+            return 1
 
     async def count_successful_calls(duration: int):
         start_time = asyncio.get_event_loop().time()
