@@ -1,5 +1,11 @@
 # openlimit
 
+> [!NOTE]
+> This is a fork of [shobrook/openlimit](https://github.com/shobrook/openlimit) with a
+> focus on adding strict type hints. It also modernises the code by using ruff as a
+> linter and pyproject.toml instead of setup.py. It keeps the minimum Python version as
+> 3.9. Functionality did not change.
+
 A simple tool for maximizing usage of the OpenAI API without hitting the rate limit.
 
 - Handles both _request_ and _token_ limits
@@ -14,7 +20,13 @@ Implements the [generic cell rate algorithm,](https://en.wikipedia.org/wiki/Gene
 You can install `openlimit` with pip:
 
 ```bash
-$ pip install openlimit
+$ pip install git+https://github.com/oyarsa/openlimit
+```
+
+Or with [`uv`](https://docs.astral.sh/uv) (recommended):
+
+```bash
+$ uv add git+https://github.com/oyarsa/openlimit
 ```
 
 ## Usage
@@ -143,7 +155,3 @@ request_args = {
 }
 num_tokens = num_tokens_consumed_by_embedding_request(**request_args)
 ```
-
-## Contributing
-
-If you want to contribute to the library, get started with [Adrenaline.](https://useadrenaline.com/) Paste in a link to this repository to familiarize yourself.

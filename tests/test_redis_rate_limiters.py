@@ -1,30 +1,32 @@
-import time
-
 import asyncio
+from typing import Any
+
 import pytest
 
 from openlimit import ChatRateLimiterWithRedis
+
 
 @pytest.fixture(scope="module")
 def chat_params():
     return {
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Who won the world series in 2020?"}
+            {"role": "user", "content": "Who won the world series in 2020?"},
         ],
         "max_tokens": 1,
-        "n": 1
+        "n": 1,
     }
 
+
 @pytest.mark.asyncio
-async def test_rate_limiter_with_redis(chat_params):
+async def test_rate_limiter_with_redis(chat_params: dict[str, Any]):
     rate_limiter_async = ChatRateLimiterWithRedis(
         request_limit=200,
         token_limit=4000,
-        redis_url="redis://localhost:6379"  # Update this to your Redis URL
+        redis_url="redis://localhost:6379",  # Update this to your Redis URL
     )
 
-    async def rate_limited_function_async(**chat_params):
+    async def rate_limited_function_async(**chat_params: Any):
         async with rate_limiter_async.limit(**chat_params):
             return "success"
 

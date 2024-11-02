@@ -1,20 +1,15 @@
-# Standard library
-import asyncio
 import time
 import typing
 
-# Third party
-import redis
-######
-# MAIN
-######
+import redis.asyncio.client
+import redis.asyncio.lock
 
 
-class RedisBucket(object):
+class RedisBucket:
     def __init__(
         self,
-        rate_limit,
-        bucket_key,
+        rate_limit: int,
+        bucket_key: str,
         redis: redis.asyncio.Redis,
         bucket_size_in_seconds: float = 1,
     ):
@@ -28,16 +23,16 @@ class RedisBucket(object):
         self._redis = redis
         self._bucket_key = bucket_key
 
-    def _lock(self, **kwargs):
+    def lock(self, **kwargs: typing.Any) -> redis.asyncio.lock.Lock:
+        return redis.asyncio.lock.Lock(
+            self._redis, f"{self._bucket_key}:lock", **kwargs
+        )
 
-        return redis.asyncio.lock.Lock(self._redis, f"{self._bucket_key}:lock", **kwargs)
-
-    async def _get_capacity(
+    async def get_capacity(
         self,
         pipeline: typing.Optional[redis.asyncio.client.Pipeline] = None,
         current_time: typing.Optional[float] = None,
-    ):
-
+    ) -> float:
         if pipeline is None:
             pipeline = self._redis.pipeline()
 
@@ -47,7 +42,9 @@ class RedisBucket(object):
         if current_time is None:
             current_time = time.time()
 
-        last_checked, capacity = await pipeline.execute()
+        last_checked, capacity = await pipeline.execute()  # type: ignore
+        assert isinstance(last_checked, float)
+        assert isinstance(capacity, float)
 
         if not last_checked or not capacity:
             last_checked = current_time
@@ -61,14 +58,13 @@ class RedisBucket(object):
 
         return new_capacity
 
-    async def _set_capacity(
+    async def set_capacity(
         self,
         new_capacity: float,
         pipeline: typing.Optional[redis.asyncio.client.Pipeline] = None,
         current_time: typing.Optional[float] = None,
         execute: bool = True,
-    ):
-
+    ) -> None:
         if pipeline is None:
             pipeline = self._redis.pipeline()
 

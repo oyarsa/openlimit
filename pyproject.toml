@@ -1,0 +1,51 @@
+[project]
+name = "openlimit"
+version = "0.3.0"
+requires-python = ">=3.9"
+dependencies = [
+    "redis>=5",
+    "tiktoken>=0.5",
+    "typing-extensions>=4.12.2",
+]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "ISC",
+    "N",
+    "PL",
+    "RUF",
+    "SIM",
+    "TRY",
+    "UP",
+    "W",
+    "ERA"
+]
+ignore = [
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments
+    "PLR0915",  # Too many statements
+    "PLR2004",  # Magic value used in comparison
+    "E501",     # Line too long (let ruff format take care of this)
+    "TRY003",   # Long messages outside exception class
+    "SIM108",   # Use ternary operation instead of if-else block
+    "ISC001",   # Incompatible with the formatter
+    "UP007",    # Use X|Y instead of Union[X, Y] (we support 3.9, this is from 3.10)
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.387",
+    "pytest>=8.3.3",
+    "ruff>=0.7.2",
+]

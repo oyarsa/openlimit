@@ -1,23 +1,18 @@
-# Standard library
-import asyncio
+from collections.abc import Callable
+from typing import Any
 
-# Local
 import openlimit.utilities as utils
 from openlimit.buckets import Bucket, Buckets
 
-############
-# BASE CLASS
-############
 
-
-class RateLimiter(object):
+class RateLimiter:
     def __init__(
         self,
-        request_limit,
-        token_limit,
-        token_counter,
+        request_limit: int,
+        token_limit: int,
+        token_counter: Callable[..., int],
         bucket_size_in_seconds: float = 1,
-    ):
+    ) -> None:
         # Rate limits
         self.request_limit = request_limit
         self.token_limit = token_limit
@@ -37,33 +32,31 @@ class RateLimiter(object):
             ]
         )
 
-    async def wait_for_capacity(self, num_tokens):
+    async def wait_for_capacity(self, num_tokens: int) -> None:
         await self._buckets.wait_for_capacity(
             amounts=[1, num_tokens], sleep_interval=self.sleep_interval
         )
 
-    def wait_for_capacity_sync(self, num_tokens):
+    def wait_for_capacity_sync(self, num_tokens: int) -> None:
         self._buckets.wait_for_capacity_sync(
             amounts=[1, num_tokens], sleep_interval=self.sleep_interval
         )
 
-    def limit(self, **kwargs):
+    def limit(self, **kwargs: Any) -> utils.ContextManager:
         num_tokens = self.token_counter(**kwargs)
         return utils.ContextManager(num_tokens, self)
 
-    def is_limited(self):
+    def is_limited(self) -> utils.FunctionDecorator:
         return utils.FunctionDecorator(self)
-
-
-######
-# MAIN
-######
 
 
 class ChatRateLimiter(RateLimiter):
     def __init__(
-        self, request_limit=3500, token_limit=90000, bucket_size_in_seconds: float = 1
-    ):
+        self,
+        request_limit: int = 3500,
+        token_limit: int = 90000,
+        bucket_size_in_seconds: float = 1,
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,
@@ -74,8 +67,11 @@ class ChatRateLimiter(RateLimiter):
 
 class CompletionRateLimiter(RateLimiter):
     def __init__(
-        self, request_limit=3500, token_limit=350000, bucket_size_in_seconds: float = 1
-    ):
+        self,
+        request_limit: int = 3500,
+        token_limit: int = 350000,
+        bucket_size_in_seconds: float = 1,
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,
@@ -87,10 +83,10 @@ class CompletionRateLimiter(RateLimiter):
 class EmbeddingRateLimiter(RateLimiter):
     def __init__(
         self,
-        request_limit=3500,
-        token_limit=70000000,
+        request_limit: int = 3500,
+        token_limit: int = 70000000,
         bucket_size_in_seconds: float = 1,
-    ):
+    ) -> None:
         super().__init__(
             request_limit=request_limit,
             token_limit=token_limit,
